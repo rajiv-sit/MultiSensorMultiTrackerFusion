@@ -1,28 +1,40 @@
-# Initial setup
 cmake_minimum_required(VERSION 3.28.1)
-project(MultiSensorMultiTrackerFusion LANGUAGES CXX C VERSION 0.0.1)
-string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
-set(CMAKE_CXX_STANDARD 20)
+project(MultiSensorMultiTrackerFusion VERSION 0.0.1 LANGUAGES CXX C)
 
-# Default configuration values
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# ---------------------------
+# Default configuration
+# ---------------------------
 set(DEFAULT_BUILD_TYPE "Release")
 set(DEFAULT_ARCH "x86-64")
 
-# Detect platform
-string(COMPARE EQUAL "Linux"   ${CMAKE_SYSTEM_NAME} LINUX)
-string(COMPARE EQUAL "Windows" ${CMAKE_SYSTEM_NAME} WINDOWS)
-if(LINUX)
-    set(OS_STRING "linux")
-elseif(WINDOWS)
-    set(OS_STRING "windows")
-else()
-    set(OS_STRING "Unknown")
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE})
+endif()
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
+
+if(NOT DEFINED ARCH)
+    set(ARCH ${DEFAULT_ARCH})
 endif()
 
-# Detect compiler
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CLANG 1)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+# ---------------------------
+# Platform detection
+# ---------------------------
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(OS_STRING "linux")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(OS_STRING "windows")
+else()
+    set(OS_STRING "unknown")
+endif()
+
+# ---------------------------
+# Compiler detection
+# ---------------------------
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
     set(CLANG 1)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(GCC 1)
@@ -32,61 +44,52 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(MSVC 1)
 endif()
 
-# Set build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE})
-endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
-
-# Set architecture to default if not set
-if(NOT ARCH)
-    set(ARCH ${DEFAULT_ARCH})
-endif()
-
-# Set bitness
-if(${ARCH} STREQUAL "x86-64")
-    set(BITNESS "64")
-    set(BITNESS_FLAG "-m${BITNESS}")
-elseif(${ARCH} STREQUAL "x86")
-    set(BITNESS "32")
-    set(BITNESS_FLAG "-m${BITNESS}")
-elseif(${ARCH} STREQUAL "armv8")
-    set(BITNESS "64")
+# ---------------------------
+# Architecture / Bitness
+# ---------------------------
+if(ARCH STREQUAL "x86-64")
+    set(BITNESS 64)
+    set(BITNESS_FLAG "-m64")
+elseif(ARCH STREQUAL "x86")
+    set(BITNESS 32)
+    set(BITNESS_FLAG "-m32")
+elseif(ARCH STREQUAL "armv8")
+    set(BITNESS 64)
     set(BITNESS_FLAG "")
 else()
-    set(BITNESS "32")
+    set(BITNESS 32)
     set(ARCH "x86")
-    set(BITNESS_FLAG "-m${BITNESS}")
-    message("Unknown architecture selected, defaulting to x86")
+    set(BITNESS_FLAG "-m32")
+    message(WARNING "Unknown architecture selected, defaulting to x86")
 endif()
 
+# ---------------------------
+# Compiler flags
+# ---------------------------
 if(MSVC)
-    # User cannot specify bitness with MSVC, so set it to whatever the generator is.
-    string(TOLOWER ${CMAKE_GENERATOR} GENERATOR)
-    if(GENERATOR MATCHES ".*win64.*")
-        set(BITNESS "64")
+    if(CMAKE_GENERATOR MATCHES ".*Win64.*")
+        set(BITNESS 64)
     else()
-        set(BITNESS "32")
+        set(BITNESS 32)
     endif()
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ox")
-
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
 elseif(GCC OR CLANG)
-    # Treat warning return-type as error to avoid undefined behaviour
-    # when a non-void function does not return a value.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++11 -Werror=return-type")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++20 -Werror=return-type")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wno-long-long")
-
 elseif(INTEL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BITNESS_FLAG} -std=c++20")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 endif()
 
-if(WINDOWS) 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:100000000")
-option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
-add_compile_definitions(_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING)
-endif(WINDOWS) 
+if(WINDOWS)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:100000000")
+    add_compile_definitions(_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING)
+    option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+endif()
 
+# ---------------------------
+# Dependencies
+# ---------------------------
 find_package(Eigen3 REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glew REQUIRED)
@@ -94,8 +97,9 @@ find_package(imgui REQUIRED)
 find_package(opengl REQUIRED)
 find_package(GTest REQUIRED)
 
-set(CPACK_NSIS_CONTACT "rajiv.sithiravel@gmail.com")
-
+# ---------------------------
+# Source files
+# ---------------------------
 set(TRACKER_PROCESS_MODELS_SRC_LIST
     include/process_models/advanced_learned/gp.hpp
 	include/process_models/advanced_learned/intent.hpp
@@ -158,70 +162,76 @@ set(TRACKER_PROCESS_MODELS_SRC_LIST
 	include/process_models/vehicle/unicycle.hpp
 )
 
-set(TEST_SRC_LIST
-    test/main.cpp
-)
+set(TEST_SRC_LIST test/main.cpp)
 
-# add sources 
 set(BINDINGS_SRC_LIST
-	${PROJECT_SOURCE_DIR}/Bindings/imgui_impl_glfw.cpp
-	${PROJECT_SOURCE_DIR}/Bindings/imgui_impl_opengl3.cpp	
+    ${PROJECT_SOURCE_DIR}/Bindings/imgui_impl_glfw.cpp
+    ${PROJECT_SOURCE_DIR}/Bindings/imgui_impl_opengl3.cpp
 )
 
-add_executable(${PROJECT_NAME_LOWER} 
-	${TRACKER_PROCESS_MODELS_SRC_LIST}
-	${BINDINGS_SRC_LIST}
-	${TEST_SRC_LIST}
+# ---------------------------
+# Main executable
+# ---------------------------
+add_executable(${PROJECT_NAME} 
+    ${TRACKER_PROCESS_MODELS_SRC_LIST}
+    ${BINDINGS_SRC_LIST}
+    ${TEST_SRC_LIST}
 )
-	
-if(WINDOWS) 				
-target_compile_options(${PROJECT_NAME_LOWER} PRIVATE "/Od")   
-endif(WINDOWS)
 
-target_include_directories(${PROJECT_NAME_LOWER} PRIVATE ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/include/process_models ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/Bindings ${PROJECT_SOURCE_DIR}/test) 
-target_link_libraries(${PROJECT_NAME_LOWER} Eigen3::Eigen glfw GLEW::GLEW imgui::imgui opengl::opengl )
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+	${PROJECT_SOURCE_DIR}/include/process_models
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/Bindings
+    ${PROJECT_SOURCE_DIR}/test
+)
 
-if(CMAKE_BUILD_TYPE STREQUAL DEBUG)
-    message("Detected compiler and platform:")
-	message("Clang:   ${CLANG}")
-	message("GCC:     ${GCC}")
-	message("Intel:   ${INTEL}")
-	message("MSVC:    ${MSVC}")
-	message("Linux:   ${LINUX}")
-	message("Windows: ${WINDOWS}")
-	message("OS X:    ${OS_X}")
+target_link_libraries(${PROJECT_NAME} 
+    Eigen3::Eigen glfw GLEW::GLEW imgui::imgui opengl::opengl
+)
+
+if(WINDOWS)
+    target_compile_options(${PROJECT_NAME} PRIVATE "/Od")
 endif()
 
-message("Configuring ${PROJECT_NAME} version ${VERSION} in ${CMAKE_BUILD_TYPE} mode for ${ARCH} (${BITNESS} bit)")
-message("Compiler flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")
-
-# --- Copy configuration file to build output directory ---
+# ---------------------------
+# Configuration file copy
+# ---------------------------
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/config)
-configure_file(${CMAKE_SOURCE_DIR}/config/sim_config.ini ${CMAKE_BINARY_DIR}/config/sim_config.ini COPYONLY)
+configure_file(
+    ${CMAKE_SOURCE_DIR}/config/sim_config.ini
+    ${CMAKE_BINARY_DIR}/config/sim_config.ini
+    COPYONLY
+)
 
-# -------------------------------
-# Unit tests project
-# -------------------------------
+# ---------------------------
+# Unit tests
+# ---------------------------
 option(BUILD_TESTS "Build GoogleTest unit tests" ON)
-
 if(BUILD_TESTS)
     enable_testing()
-
-    add_executable(${PROJECT_NAME_LOWER}_tests
-        test/test_cvmodel.cpp
-    )
-
-    target_link_libraries(${PROJECT_NAME_LOWER}_tests
-        gtest::gtest
-        Eigen3::Eigen
-    )
-
-    target_include_directories(${PROJECT_NAME_LOWER}_tests PRIVATE
+    add_executable(${PROJECT_NAME}_tests test/test_cvmodel.cpp test/test_bicyclemodel.cpp)
+    target_link_libraries(${PROJECT_NAME}_tests gtest::gtest Eigen3::Eigen)
+    target_include_directories(${PROJECT_NAME}_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/include
-		${PROJECT_SOURCE_DIR}/include/process_models
+        ${PROJECT_SOURCE_DIR}/include/process_models
     )
-
     include(GoogleTest)
-    gtest_discover_tests(${PROJECT_NAME_LOWER}_tests)
+    gtest_discover_tests(${PROJECT_NAME}_tests)
 endif()
 
+# ---------------------------
+# Messages
+# ---------------------------
+if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")
+    message(STATUS "Compiler and platform info:")
+    message(STATUS "Clang: ${CLANG}")
+    message(STATUS "GCC: ${GCC}")
+    message(STATUS "Intel: ${INTEL}")
+    message(STATUS "MSVC: ${MSVC}")
+    message(STATUS "Linux: ${LINUX}")
+    message(STATUS "Windows: ${WINDOWS}")
+endif()
+
+message(STATUS "Configuring ${PROJECT_NAME} version ${PROJECT_VERSION} in ${CMAKE_BUILD_TYPE} mode for ${ARCH} (${BITNESS} bit)")
+message(STATUS "Compiler flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}")

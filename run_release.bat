@@ -1,6 +1,6 @@
 @ECHO ON
 REM ==============================
-REM MultiTracker Build Script
+REM MultiTracker Build Script - Release Mode
 REM ==============================
 
 REM Save current directory
@@ -22,7 +22,7 @@ conan install . ^
     -c tools.system.package_manager:sudo=True ^
     --output-folder=build ^
     --build=missing ^
-    --settings=build_type=Debug
+    --settings=build_type=Release
 
 REM ------------------------------
 REM Generate Visual Studio project
@@ -31,12 +31,13 @@ cd build
 cmake .. ^
     -G "Visual Studio 17 2022" ^
     -DCMAKE_TOOLCHAIN_FILE=build/generators/conan_toolchain.cmake ^
-    -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+    -DCMAKE_POLICY_DEFAULT_CMP0091=NEW ^
+    -DCMAKE_BUILD_TYPE=Release
 
 REM ------------------------------
 REM Build project
 REM ------------------------------
-cmake --build . --config Debug
+cmake --build . --config Release
 
 REM ------------------------------
 REM Run unit tests
@@ -46,7 +47,7 @@ ctest --output-on-failure
 REM ------------------------------
 REM Run executable
 REM ------------------------------
-Debug\multi_tracker.exe
+Release\multi_tracker.exe
 
 REM Return to original directory
 POPD
