@@ -92,6 +92,7 @@ find_package(glfw3 REQUIRED)
 find_package(glew REQUIRED)
 find_package(imgui REQUIRED)
 find_package(opengl REQUIRED)
+find_package(GTest REQUIRED)
 
 set(CPACK_NSIS_CONTACT "rajiv.sithiravel@gmail.com")
 
@@ -197,4 +198,30 @@ message("Compiler flags: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE
 # --- Copy configuration file to build output directory ---
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/config)
 configure_file(${CMAKE_SOURCE_DIR}/config/sim_config.ini ${CMAKE_BINARY_DIR}/config/sim_config.ini COPYONLY)
+
+# -------------------------------
+# Unit tests project
+# -------------------------------
+option(BUILD_TESTS "Build GoogleTest unit tests" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    add_executable(${PROJECT_NAME_LOWER}_tests
+        test/test_cvmodel.cpp
+    )
+
+    target_link_libraries(${PROJECT_NAME_LOWER}_tests
+        gtest::gtest
+        Eigen3::Eigen
+    )
+
+    target_include_directories(${PROJECT_NAME_LOWER}_tests PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+		${PROJECT_SOURCE_DIR}/include/process_models
+    )
+
+    include(GoogleTest)
+    gtest_discover_tests(${PROJECT_NAME_LOWER}_tests)
+endif()
 

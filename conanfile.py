@@ -56,6 +56,7 @@ class MultiSensorMultiTrackerFusion(ConanFile):
         self.requires("glew/2.2.0")
         self.requires("imgui/cci.20230105+1.89.2.docking") 
         self.requires("opengl/system")
+        self.requires("gtest/1.15.0")
            
     def build_requirements(self):
         self.tool_requires("cmake/3.28.1")
