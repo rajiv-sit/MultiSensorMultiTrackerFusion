@@ -159,7 +159,18 @@ set(TRACKER_PROCESS_MODELS_SRC_LIST
 	include/process_models/vehicle/ctrv.hpp
 	include/process_models/vehicle/dubins.hpp
 	include/process_models/vehicle/lane_constrained.hpp
-	include/process_models/vehicle/unicycle.hpp
+	include/process_models/vehicle/unicycle.hpp	
+	include/measurement_models/altimeter.hpp
+	include/measurement_models/camera.hpp
+	include/measurement_models/gps.hpp
+	include/measurement_models/imu.hpp
+	include/measurement_models/infrared.hpp
+	include/measurement_models/lidar.hpp
+	include/measurement_models/magnetometer.hpp
+	include/measurement_models/radar.hpp
+    include/measurement_models/sonar.hpp
+	include/measurement_models/sensor_model.hpp	
+    include/measurement_models/ultrasound.hpp	
 )
 
 set(TEST_SRC_LIST test/main.cpp)
@@ -181,6 +192,7 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${PROJECT_SOURCE_DIR}/include
 	${PROJECT_SOURCE_DIR}/include/process_models
+	${PROJECT_SOURCE_DIR}/include/measurement_models
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/Bindings
     ${PROJECT_SOURCE_DIR}/test
@@ -210,11 +222,12 @@ configure_file(
 option(BUILD_TESTS "Build GoogleTest unit tests" ON)
 if(BUILD_TESTS)
     enable_testing()
-    add_executable(${PROJECT_NAME}_tests test/test_cvmodel.cpp test/test_bicyclemodel.cpp)
+    add_executable(${PROJECT_NAME}_tests test/test_cvmodel.cpp test/test_bicyclemodel.cpp test/test_radar_model.cpp)
     target_link_libraries(${PROJECT_NAME}_tests gtest::gtest Eigen3::Eigen)
     target_include_directories(${PROJECT_NAME}_tests PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/process_models
+		${PROJECT_SOURCE_DIR}/include/measurement_models
     )
     include(GoogleTest)
     gtest_discover_tests(${PROJECT_NAME}_tests)

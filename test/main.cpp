@@ -1,6 +1,7 @@
 #include "process_models/classical_baseline/cv.hpp"
 #include <iostream>
 #include <iomanip>
+#include "types.hpp"
 
 using namespace tracker;
 

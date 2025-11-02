@@ -1,13 +1,13 @@
 // process_model.hpp
 #pragma once
-#include <Eigen/Dense>
-#include <memory>
-#include <string>
+
+#include "types.hpp"
 
 namespace tracker {
 
 // Base interface for process/dynamics models
 class IProcessModel {
+	
 public:
     using Vec = Eigen::VectorXd;
     using Mat = Eigen::MatrixXd;
